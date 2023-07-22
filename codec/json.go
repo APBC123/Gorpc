@@ -32,18 +32,20 @@ func (c *JsonCodec) ReadBody(body interface{}) error {
 	return c.dec.Decode(body)
 }
 
-func (c *JsonCodec) Write(h *Header, body interface{}) error {
-	if err := c.enc.Encode(h); err != nil {
+func (c *JsonCodec) Write(h *Header, body interface{}) (err error) {
+	defer func() {
+		_ = c.buf.Flush()
+		if err != nil {
+			_ = c.Close()
+		}
+	}()
+	if err = c.enc.Encode(h); err != nil {
 		log.Println("rpc codec: json error encoding header:", err)
 		return err
 	}
-	if err := c.enc.Encode(body); err != nil {
+	if err = c.enc.Encode(body); err != nil {
 		log.Println("rpc codec: json error encoding body:", err)
 		return err
-	}
-	err := c.buf.Flush()
-	if err != nil {
-		_ = c.Close()
 	}
 	return nil
 }

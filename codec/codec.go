@@ -25,7 +25,6 @@ const (
 	GobType  Type = "application/gob"
 	JsonType Type = "application/json"
 	XMLType  Type = "application/xml"
-	//加入protobuf支持
 )
 
 var NewCodecFuncMap map[Type]NewCodecFunc
