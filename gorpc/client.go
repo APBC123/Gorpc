@@ -54,6 +54,7 @@ func (client *Client) IsAvailable() bool {
 func (client *Client) registerCall(call *Call) (uint64, error) {
 	client.mu.Lock()
 	defer client.mu.Unlock()
+	//不应直接调用IsAvailable()函数，否则将发生死锁
 	if client.closing || client.shutdown {
 		return 0, errors.New("connection is shut down")
 	}
