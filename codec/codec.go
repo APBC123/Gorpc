@@ -22,9 +22,10 @@ type NewCodecFunc func(conn io.ReadWriteCloser) Codec
 type Type string
 
 const (
-	GobType  Type = "application/gob"
-	JsonType Type = "application/json"
-	XMLType  Type = "application/xml"
+	GobType           Type = "application/gob"
+	JsonType          Type = "application/json"
+	XMLType           Type = "application/xml"
+	ProtoBufCodecType Type = "application/protobuf"
 )
 
 var NewCodecFuncMap map[Type]NewCodecFunc

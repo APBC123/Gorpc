@@ -2,6 +2,7 @@ package gorpc
 
 import (
 	"Gorpc/codec"
+	workpool "Gorpc/pool"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,8 +28,8 @@ type Option struct {
 var DefaultOption = &Option{
 	FlagNumber:        FlagNumber,
 	CodecType:         codec.JsonType,
-	ConnectionTimeout: time.Second * 10,
-	HandleTimeout:     time.Second * 10,
+	ConnectionTimeout: time.Second * 2,
+	HandleTimeout:     time.Second * 2,
 }
 
 type Server struct {
@@ -46,7 +47,10 @@ func (server *Server) Accept(lis net.Listener) {
 			log.Println("rpc server: accept error:", err)
 			return
 		}
-		go server.ServeConn(conn)
+		f := func() {
+			server.ServeConn(conn)
+		}
+		workpool.SubmitTask(f)
 	}
 }
 
@@ -97,7 +101,11 @@ func (server *Server) serveCode(cc codec.Codec, opt *Option) {
 			continue
 		}
 		wg.Add(1)
-		go server.handleRequest(cc, req, sending, wg, opt.HandleTimeout)
+		//go server.handleRequest(cc, req, sending, wg, opt.HandleTimeout)
+		f := func() {
+			server.handleRequest(cc, req, sending, wg, opt.HandleTimeout)
+		}
+		workpool.SubmitTask(f)
 	}
 	wg.Wait()
 	_ = cc.Close()
