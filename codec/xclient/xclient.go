@@ -2,6 +2,7 @@ package xclient
 
 import (
 	"Gorpc/gorpc"
+	workpool "Gorpc/pool"
 	"context"
 	"reflect"
 	"sync"
@@ -82,24 +83,26 @@ func (xc *XClient) Broadcast(ctx context.Context, serviceMethod string, args, re
 	ctx, cancel := context.WithCancel(ctx)
 	for _, rpcAddr := range servers {
 		wg.Add(1)
-		go func(rpcAddr string) {
-			defer wg.Done()
-			var clonedReply interface{}
-			if reply != nil {
-				clonedReply = reflect.New(reflect.ValueOf(reply).Elem().Type()).Interface()
-			}
-			err := xc.call(rpcAddr, ctx, serviceMethod, args, clonedReply)
-			mu.Lock()
-			if err != nil && e == nil {
-				e = err
-				cancel() // if any call failed, cancel unfinished calls
-			}
-			if err == nil && !replyDone {
-				reflect.ValueOf(reply).Elem().Set(reflect.ValueOf(clonedReply).Elem())
-				replyDone = true
-			}
-			mu.Unlock()
-		}(rpcAddr)
+		workpool.SubmitTask(func() {
+			func(rpcAddr string) {
+				defer wg.Done()
+				var clonedReply interface{}
+				if reply != nil {
+					clonedReply = reflect.New(reflect.ValueOf(reply).Elem().Type()).Interface()
+				}
+				err := xc.call(rpcAddr, ctx, serviceMethod, args, clonedReply)
+				mu.Lock()
+				if err != nil && e == nil {
+					e = err
+					cancel() // if any call failed, cancel unfinished calls
+				}
+				if err == nil && !replyDone {
+					reflect.ValueOf(reply).Elem().Set(reflect.ValueOf(clonedReply).Elem())
+					replyDone = true
+				}
+				mu.Unlock()
+			}(rpcAddr)
+		})
 	}
 	wg.Wait()
 	return e

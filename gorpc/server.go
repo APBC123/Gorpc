@@ -28,7 +28,7 @@ type Option struct {
 var DefaultOption = &Option{
 	FlagNumber:        FlagNumber,
 	CodecType:         codec.JsonType,
-	ConnectionTimeout: time.Second * 2,
+	ConnectionTimeout: time.Second * 3,
 	HandleTimeout:     time.Second * 2,
 }
 
@@ -47,10 +47,9 @@ func (server *Server) Accept(lis net.Listener) {
 			log.Println("rpc server: accept error:", err)
 			return
 		}
-		f := func() {
+		workpool.SubmitTask(func() {
 			server.ServeConn(conn)
-		}
-		workpool.SubmitTask(f)
+		})
 	}
 }
 
@@ -101,11 +100,9 @@ func (server *Server) serveCode(cc codec.Codec, opt *Option) {
 			continue
 		}
 		wg.Add(1)
-		//go server.handleRequest(cc, req, sending, wg, opt.HandleTimeout)
-		f := func() {
+		workpool.SubmitTask(func() {
 			server.handleRequest(cc, req, sending, wg, opt.HandleTimeout)
-		}
-		workpool.SubmitTask(f)
+		})
 	}
 	wg.Wait()
 	_ = cc.Close()
@@ -150,7 +147,7 @@ func (server *Server) handleRequest(cc codec.Codec, req *request, sending *sync.
 	defer wg.Done()
 	called := make(chan struct{})
 	sent := make(chan struct{})
-	go func() {
+	workpool.SubmitTask(func() {
 		err := req.svc.call(req.mtype, req.argv, req.replyv)
 		called <- struct{}{}
 		if err != nil {
@@ -161,7 +158,7 @@ func (server *Server) handleRequest(cc codec.Codec, req *request, sending *sync.
 		}
 		server.sendResponse(cc, req.h, req.replyv.Interface(), sending)
 		sent <- struct{}{}
-	}()
+	})
 	if timeout == 0 {
 		<-called
 		<-sent
@@ -213,6 +210,7 @@ func (server *Server) findService(serviceMethod string) (svc *service, mtype *me
 	if mtype == nil {
 		err = errors.New("rpc server: can't find method " + methodName)
 	}
+
 	return
 }
 

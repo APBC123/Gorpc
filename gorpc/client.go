@@ -2,6 +2,7 @@ package gorpc
 
 import (
 	"Gorpc/codec"
+	workpool "Gorpc/pool"
 	"context"
 	"encoding/json"
 	"errors"
@@ -143,7 +144,9 @@ func newClientCodec(cc codec.Codec, opt *Option) *Client {
 		opt:     opt,
 		cc:      cc,
 	}
-	go client.receive()
+	workpool.SubmitTask(func() {
+		client.receive()
+	})
 	return client
 }
 
@@ -182,10 +185,10 @@ func dialTimeout(f newClientFunc, network, addr string, opts ...*Option) (client
 		}
 	}()
 	ch := make(chan clientResult)
-	go func() {
+	workpool.SubmitTask(func() {
 		client, err = f(conn, opt)
 		ch <- clientResult{client: client, err: err}
-	}()
+	})
 	if opt.ConnectionTimeout == 0 {
 		result := <-ch
 		return result.client, result.err

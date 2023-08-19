@@ -50,7 +50,7 @@ func newService(receive interface{}) *service {
 	s := new(service)
 	s.receive = reflect.ValueOf(receive)
 	s.name = reflect.Indirect(s.receive).Type().Name()
-	s.typ = reflect.TypeOf(receive)
+	s.typ = reflect.TypeOf(receive) //便于registerMethod中获取type对应的成员方法
 	s.registerMethods()
 	return s
 }
