@@ -57,7 +57,7 @@ func initWorkerPool() *workerPool {
 	wOnce.Do(func() {
 		wpool = &workerPool{
 			capacity:       10000,
-			expireInterval: time.Duration(5000) * time.Millisecond,
+			expireInterval: time.Duration(5) * time.Second,
 			limit:          false,
 			sig:            make(chan sig, 1),
 		}
