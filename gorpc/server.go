@@ -216,11 +216,10 @@ func (server *Server) findService(serviceMethod string) (svc *service, mtype *me
 
 const (
 	connected        = "200 Connected to GoRPC"
-	defaultRPCPath   = "/_goprc_"
+	defaultRPCPath   = "/goprc"
 	defaultDebugPath = "/debug/gorpc"
 )
 
-// ServeHTTP implements an http.Handler that answers RPC requests.
 func (server *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "CONNECT" {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
